@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     metabase = {
-      source  = "flovouin/metabase"
+      source  = "zerogachis/metabase"
       version = "~> 0.9"
     }
   }
