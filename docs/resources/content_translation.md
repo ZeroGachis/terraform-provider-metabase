@@ -4,11 +4,17 @@ page_title: "metabase_content_translation Resource - terraform-provider-metabase
 subcategory: ""
 description: |-
   A Metabase content translation dictionary. This resource manages the translation dictionary for Metabase Enterprise Edition. The dictionary content is stored as a hash in the state for efficiency.
+  ⚠️ Important Warning
+  Deleting this resource will erase all translation dictionaries on the Metabase instance. When you destroy this resource, it uploads an empty dictionary to Metabase, effectively removing all translations. Make sure to backup your translation data before destroying this resource if you need to preserve the translations.
 ---
 
 # metabase_content_translation (Resource)
 
 A Metabase content translation dictionary. This resource manages the translation dictionary for Metabase Enterprise Edition. The dictionary content is stored as a hash in the state for efficiency.
+
+## ⚠️ Important Warning
+
+**Deleting this resource will erase all translation dictionaries on the Metabase instance.** When you destroy this resource, it uploads an empty dictionary to Metabase, effectively removing all translations. Make sure to backup your translation data before destroying this resource if you need to preserve the translations.
 
 ## Example Usage
 
@@ -16,7 +22,7 @@ A Metabase content translation dictionary. This resource manages the translation
 # Basic content translation dictionary
 resource "metabase_content_translation" "main" {
   dictionary = <<-EOT
-Language,String,Translation
+Locale Code,String,Translation
 en,Dashboard,Dashboard
 fr,Dashboard,Tableau de bord
 es,Dashboard,Tablero
@@ -52,7 +58,7 @@ resource "metabase_content_translation" "from_file" {
 
 ### Required
 
-- `dictionary` (String) The CSV content of the translation dictionary. Must have columns: Language (locale code), String (text to translate), Translation (translated text). Example: `Language,String,Translation\npt-BR,Examples,Exemplos\nen,Dashboard,Dashboard`
+- `dictionary` (String) The CSV content of the translation dictionary. Must have columns: Locale Code (locale code), String (text to translate), Translation (translated text). Example: `Locale Code,String,Translation\npt-BR,Examples,Exemplos\nen,Dashboard,Dashboard`
 
 ### Read-Only
 

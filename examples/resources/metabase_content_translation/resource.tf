@@ -1,7 +1,7 @@
 # Basic content translation dictionary
 resource "metabase_content_translation" "main" {
   dictionary = <<-EOT
-Language,String,Translation
+Locale Code,String,Translation
 en,Dashboard,Dashboard
 fr,Dashboard,Tableau de bord
 es,Dashboard,Tablero

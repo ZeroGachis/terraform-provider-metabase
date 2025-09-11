@@ -33,9 +33,9 @@ type ContentTranslationResource struct {
 
 // The Terraform model for content translations.
 type ContentTranslationResourceModel struct {
-	Id           types.String `tfsdk:"id"`            // A unique identifier for the translation set.
-	Dictionary   types.String `tfsdk:"dictionary"`    // The CSV content of the translation dictionary.
-	ContentHash  types.String `tfsdk:"content_hash"`  // SHA256 hash of the dictionary content for state management.
+	Id          types.String `tfsdk:"id"`           // A unique identifier for the translation set.
+	Dictionary  types.String `tfsdk:"dictionary"`   // The CSV content of the translation dictionary.
+	ContentHash types.String `tfsdk:"content_hash"` // SHA256 hash of the dictionary content for state management.
 }
 
 // calculateContentHash computes a SHA256 hash of the dictionary content.
@@ -60,7 +60,7 @@ func (r *ContentTranslationResource) uploadContentTranslationDictionary(ctx cont
 	// Create multipart form data for file upload
 	body := &strings.Builder{}
 	writer := multipart.NewWriter(body)
-	
+
 	// Create form file field
 	fileWriter, err := writer.CreateFormFile("file", "translations.csv")
 	if err != nil {
@@ -106,7 +106,7 @@ func (r *ContentTranslationResource) uploadContentTranslationDictionary(ctx cont
 
 func (r *ContentTranslationResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "A Metabase content translation dictionary. This resource manages the translation dictionary for Metabase Enterprise Edition. The dictionary content is stored as a hash in the state for efficiency.",
+		MarkdownDescription: "A Metabase content translation dictionary. This resource manages the translation dictionary for Metabase Enterprise Edition. The dictionary content is stored as a hash in the state for efficiency.\n\n## ⚠️ Important Warning\n\n**Deleting this resource will erase all translation dictionaries on the Metabase instance.** When you destroy this resource, it uploads an empty dictionary to Metabase, effectively removing all translations. Make sure to backup your translation data before destroying this resource if you need to preserve the translations.",
 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -117,7 +117,7 @@ func (r *ContentTranslationResource) Schema(ctx context.Context, req resource.Sc
 				},
 			},
 			"dictionary": schema.StringAttribute{
-				MarkdownDescription: "The CSV content of the translation dictionary. Must have columns: Language (locale code), String (text to translate), Translation (translated text). Example: `Language,String,Translation\\npt-BR,Examples,Exemplos\\nen,Dashboard,Dashboard`",
+				MarkdownDescription: "The CSV content of the translation dictionary. Must have columns: Locale Code (locale code), String (text to translate), Translation (translated text). Example: `Locale Code,String,Translation\\npt-BR,Examples,Exemplos\\nen,Dashboard,Dashboard`",
 				Required:            true,
 			},
 			"content_hash": schema.StringAttribute{
@@ -208,7 +208,7 @@ func (r *ContentTranslationResource) Update(ctx context.Context, req resource.Up
 func (r *ContentTranslationResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	// For content translation, deletion means uploading an empty dictionary
 	// This effectively removes all translations
-	emptyDictionary := "Language,String,Translation\n"
-	
+	emptyDictionary := "Locale Code,String,Translation\n"
+
 	resp.Diagnostics.Append(r.uploadContentTranslationDictionary(ctx, emptyDictionary)...)
 }
