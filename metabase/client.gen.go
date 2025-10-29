@@ -5879,28 +5879,32 @@ func ParseCreateSessionResponse(rsp *http.Response) (*CreateSessionResponse, err
 
 // ParseGetSettingResponse parses an HTTP response from a GetSettingWithResponse call
 func ParseGetSettingResponse(rsp *http.Response) (*GetSettingResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
+    bodyBytes, err := io.ReadAll(rsp.Body)
+    defer func() { _ = rsp.Body.Close() }()
+    if err != nil {
+        return nil, err
+    }
 
-	response := &GetSettingResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
+    response := &GetSettingResponse{
+        Body:         bodyBytes,
+        HTTPResponse: rsp,
+    }
 
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest interface{}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
+    // Check if the response is JSON
+    if strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200 {
+        var dest interface{}
+        if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+            // If JSON unmarshaling fails, assume it's a plain string
+            response.JSON200 = nil
+            return response, nil
+        }
+        response.JSON200 = &dest
+    } else {
+        // Handle plain string responses
+        response.JSON200 = nil
+    }
 
-	}
-
-	return response, nil
+    return response, nil
 }
 
 // ParseUpdateSettingResponse parses an HTTP response from a UpdateSettingWithResponse call

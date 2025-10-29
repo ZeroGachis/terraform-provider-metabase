@@ -24,37 +24,30 @@ resource "metabase_setting" "%s" {
 }
 
 func testAccCheckSettingExists(resourceName string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[resourceName]
-		if !ok {
-			return fmt.Errorf("Failed to find resource %s in state.", resourceName)
-		}
+    return func(s *terraform.State) error {
+        rs, ok := s.RootModule().Resources[resourceName]
+        if !ok {
+            return fmt.Errorf("Failed to find resource %s in state.", resourceName)
+        }
 
-		response, err := testAccMetabaseClient.GetSettingWithResponse(context.Background(), rs.Primary.ID)
-		if err != nil {
-			// Check if this is a JSON unmarshaling error for direct values
-			if strings.Contains(err.Error(), "cannot unmarshal") && strings.Contains(err.Error(), "into Go value of type metabase.Setting") {
-				// The API returned a direct value instead of a Setting object
-				// This is acceptable for some settings like enable-embedding
-				return nil
-			}
-			return err
-		}
-		if response.StatusCode() != 200 {
-			return fmt.Errorf("Received unexpected response from the Metabase API when getting setting.")
-		}
-		if response.JSON200 == nil {
-			// If we get 200 with nil JSON, the setting is at its default value
-			// This is acceptable - the resource should handle this case
-			return nil
-		}
+        response, err := testAccMetabaseClient.GetSettingWithResponse(context.Background(), rs.Primary.ID)
+        if err != nil {
+            return fmt.Errorf("Error fetching setting: %v", err)
+        }
 
-		// For direct values, we can't easily compare the key and value
-		// since the API returns just the value, not the full Setting object
-		// We'll just verify that we got a response
+        if response.StatusCode() == 204 {
+            // Setting exists but is at its default value
+            return nil
+        }
 
-		return nil
-	}
+        if response.StatusCode() != 200 {
+            return fmt.Errorf("Received unexpected response from the Metabase API when getting setting. StatusCode=%d", response.StatusCode())
+        }
+
+        // For direct values, we can't easily compare the key and value
+        // since the API returns just the value, not the full Setting object
+        return nil
+    }
 }
 
 func testAccCheckSettingDestroy(s *terraform.State) error {
@@ -76,7 +69,7 @@ func testAccCheckSettingDestroy(s *terraform.State) error {
 		}
 
 		// The setting should still exist but with its default value
-		if response.StatusCode() == 200 {
+		if response.StatusCode() == 200 || response.StatusCode() == 204 {
 			// For direct values, we can't easily verify the default value
 			// since the API returns just the value, not the full Setting object
 			// We'll just verify that we got a response
@@ -254,4 +247,31 @@ func TestAccSettingResourceEdgeCases(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestAccSettingResourcePlainString(t *testing.T) {
+    resource.Test(t, resource.TestCase{
+        ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+        CheckDestroy:             testAccCheckSettingDestroy,
+        Steps: []resource.TestStep{
+            // Test setting with plain string value "Monday"
+            {
+                Config: providerApiKeyConfig + testAccSettingResource("start_of_week", "start-of-week", "monday"),
+                Check: resource.ComposeAggregateTestCheckFunc(
+                    resource.TestCheckResourceAttr("metabase_setting.start_of_week", "key", "start-of-week"),
+                    resource.TestCheckResourceAttr("metabase_setting.start_of_week", "value", "monday"),
+                    testAccCheckSettingExists("metabase_setting.start_of_week"),
+                ),
+            },
+            // Update the setting to another plain string value
+            {
+                Config: providerApiKeyConfig + testAccSettingResource("start_of_week", "start-of-week", "sunday"),
+                Check: resource.ComposeAggregateTestCheckFunc(
+                    resource.TestCheckResourceAttr("metabase_setting.start_of_week", "key", "start-of-week"),
+                    resource.TestCheckResourceAttr("metabase_setting.start_of_week", "value", "sunday"),
+                    testAccCheckSettingExists("metabase_setting.start_of_week"),
+                ),
+            },
+        },
+    })
 }
